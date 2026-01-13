@@ -290,7 +290,7 @@
             transform: scale(1.15) rotate(1deg);
         }
         
-        /* Enhanced Caption Overlay */
+        /* Enhanced Caption Overlay - Default for desktop */
         .memory-overlay {
             position: absolute;
             bottom: 0;
@@ -310,7 +310,15 @@
             align-items: flex-end;
         }
         
-        .memory-card:hover .memory-overlay {
+        /* For desktop, show overlay on hover */
+        @media (hover: hover) and (pointer: fine) {
+            .memory-card:hover .memory-overlay {
+                transform: translateY(0);
+            }
+        }
+        
+        /* For mobile/touch devices, always show caption */
+        .mobile-caption-visible .memory-overlay {
             transform: translateY(0);
         }
         
@@ -329,7 +337,16 @@
             letter-spacing: 0.3px;
         }
         
-        .memory-card:hover .memory-text {
+        /* Desktop hover behavior */
+        @media (hover: hover) and (pointer: fine) {
+            .memory-card:hover .memory-text {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Mobile caption visibility */
+        .mobile-caption-visible .memory-text {
             opacity: 1;
             transform: translateY(0);
         }
@@ -423,6 +440,14 @@
             box-shadow: 0 8px 25px rgba(193, 154, 107, 0.6), 0 0 15px rgba(212, 165, 116, 0.4);
         }
         
+        /* Mobile-specific caption styling */
+        .memory-card.mobile-active {
+            transform: scale(1.03);
+            box-shadow: 0 25px 50px rgba(139, 115, 85, 0.25),
+                        0 0 30px rgba(193, 154, 107, 0.2);
+            z-index: 10;
+        }
+        
         /* Footer - Fixed at bottom */
         footer {
             text-align: center;
@@ -477,7 +502,7 @@
             display: none;
         }
         
-        /* Responsive Design */
+        /* Mobile Responsive Design */
         @media (max-width: 1024px) {
             .gallery {
                 grid-template-columns: repeat(2, 1fr);
@@ -534,7 +559,29 @@
             }
             
             .memory-card {
-                height: 250px;
+                height: 300px;
+            }
+            
+            /* Mobile: Always show captions on mobile devices */
+            .memory-overlay {
+                transform: translateY(0);
+                background: linear-gradient(to top, 
+                    rgba(93, 83, 74, 0.95) 0%, 
+                    rgba(93, 83, 74, 0.85) 40%,
+                    rgba(93, 83, 74, 0.6) 70%,
+                    rgba(93, 83, 74, 0.3) 100%);
+            }
+            
+            .memory-text {
+                opacity: 1;
+                transform: translateY(0);
+                font-size: 1rem;
+                padding: 5px 0;
+            }
+            
+            /* Mobile touch feedback */
+            .memory-card:active {
+                transform: scale(0.98);
             }
             
             .message-box {
@@ -554,6 +601,21 @@
             
             footer {
                 padding: 15px;
+            }
+            
+            /* Add scroll indicator for mobile */
+            .scroll-indicator {
+                text-align: center;
+                margin-top: 15px;
+                color: var(--secondary);
+                font-size: 0.9rem;
+                opacity: 0.8;
+                animation: fadeInOut 2s infinite;
+            }
+            
+            @keyframes fadeInOut {
+                0%, 100% { opacity: 0.5; }
+                50% { opacity: 1; }
             }
         }
         
@@ -603,16 +665,55 @@
             }
             
             .memory-card {
-                height: 220px;
+                height: 250px;
             }
             
             .memory-text {
-                font-size: 1rem;
+                font-size: 0.95rem;
+                padding: 8px 5px;
             }
             
             footer {
                 padding: 12px;
                 font-size: 0.85rem;
+            }
+        }
+        
+        /* Tablet landscape and smaller */
+        @media (max-width: 1024px) and (orientation: landscape) {
+            .gallery {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .memory-card {
+                height: 250px;
+            }
+            
+            .memory-text {
+                font-size: 0.9rem;
+                padding: 5px;
+            }
+        }
+        
+        /* Small mobile landscape */
+        @media (max-width: 767px) and (orientation: landscape) {
+            header {
+                min-height: 40vh;
+                padding: 10px;
+            }
+            
+            .gallery {
+                grid-template-columns: repeat(2, 1fr);
+                max-width: 100%;
+            }
+            
+            .memory-card {
+                height: 200px;
+            }
+            
+            .memory-text {
+                font-size: 0.8rem;
+                padding: 3px;
             }
         }
         
@@ -623,6 +724,10 @@
             
             .message-box {
                 max-height: 50vh;
+            }
+            
+            .memory-card {
+                height: 200px;
             }
         }
         
@@ -646,6 +751,28 @@
         /* Hide cursor when not needed */
         .cursor-hidden {
             display: none !important;
+        }
+        
+        /* Improved mobile scrolling behavior */
+        .memories-section {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Mobile scroll indicator */
+        .mobile-scroll-indicator {
+            display: none;
+            text-align: center;
+            margin: 10px 0 20px;
+            color: var(--secondary);
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-scroll-indicator {
+                display: block;
+            }
         }
     </style>
 </head>
@@ -676,6 +803,9 @@
         <!-- Memories Gallery Section -->
         <section class="memories-section" id="memories-section">
             <h2 class="section-title">Gallery</h2>
+            <div class="mobile-scroll-indicator">
+                <i class="fas fa-chevron-down"></i> Scroll to view memories
+            </div>
             <div class="gallery" id="gallery">
                 <!-- Memory cards will be generated by JavaScript -->
             </div>
@@ -855,28 +985,60 @@ Your Best Friend`;
             }, 50);
         }
         
-        // Initialize tilt effect for memory cards
+        // Initialize tilt effect for memory cards (desktop only)
         function initTiltEffect() {
-            const cards = document.querySelectorAll('.memory-card');
-            
-            cards.forEach(card => {
-                card.addEventListener('mousemove', (e) => {
-                    const rect = card.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-                    
-                    const rotateY = ((x - centerX) / centerX) * 5;
-                    const rotateX = ((centerY - y) / centerY) * 5;
-                    
-                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
-                });
+            // Only apply tilt effect on desktop
+            if (window.innerWidth > 768) {
+                const cards = document.querySelectorAll('.memory-card');
                 
-                card.addEventListener('mouseleave', () => {
-                    card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+                cards.forEach(card => {
+                    card.addEventListener('mousemove', (e) => {
+                        const rect = card.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        
+                        const centerX = rect.width / 2;
+                        const centerY = rect.height / 2;
+                        
+                        const rotateY = ((x - centerX) / centerX) * 5;
+                        const rotateX = ((centerY - y) / centerY) * 5;
+                        
+                        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
+                    });
+                    
+                    card.addEventListener('mouseleave', () => {
+                        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+                    });
                 });
+            }
+        }
+        
+        // Initialize Intersection Observer for mobile caption visibility
+        function initIntersectionObserver() {
+            // Only needed for mobile devices
+            if (window.innerWidth > 768) return;
+            
+            const options = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.6 // When 60% of the card is visible
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Card is in view - highlight it on mobile
+                        entry.target.classList.add('mobile-caption-visible', 'mobile-active');
+                    } else {
+                        // Card is out of view
+                        entry.target.classList.remove('mobile-caption-visible', 'mobile-active');
+                    }
+                });
+            }, options);
+            
+            // Observe all memory cards
+            document.querySelectorAll('.memory-card').forEach(card => {
+                observer.observe(card);
             });
         }
         
@@ -918,13 +1080,31 @@ Your Best Friend`;
                 `;
                 memoryCard.addEventListener('click', (e) => {
                     createSparkle(e.clientX, e.clientY);
+                    
+                    // On mobile, toggle active state on click
+                    if (window.innerWidth <= 768) {
+                        document.querySelectorAll('.memory-card').forEach(card => {
+                            card.classList.remove('mobile-active');
+                        });
+                        memoryCard.classList.add('mobile-active');
+                        
+                        // Scroll the clicked card to center of view on mobile
+                        setTimeout(() => {
+                            memoryCard.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center',
+                                inline: 'nearest'
+                            });
+                        }, 100);
+                    }
                 });
                 gallery.appendChild(memoryCard);
             });
             
-            // Initialize tilt effect
+            // Initialize tilt effect for desktop
             setTimeout(() => {
                 initTiltEffect();
+                initIntersectionObserver();
             }, 1000);
             
             // Initial emoji creation
@@ -933,6 +1113,20 @@ Your Best Friend`;
                     createFloatingEmojis(3);
                 }
             }, 3000);
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                // Reinitialize effects on resize
+                initTiltEffect();
+                initIntersectionObserver();
+                
+                // Adjust message box height for mobile
+                if (window.innerWidth <= 768) {
+                    messageBox.style.maxHeight = '60vh';
+                } else {
+                    messageBox.style.maxHeight = '70vh';
+                }
+            });
         }
         
         // Show memories
@@ -944,9 +1138,10 @@ Your Best Friend`;
                 quoteButtonContainer.style.display = 'block';
                 quoteButtonContainer.style.opacity = '1';
                 
-                // Reinitialize tilt effect for newly shown cards
+                // Reinitialize effects for newly shown cards
                 setTimeout(() => {
                     initTiltEffect();
+                    initIntersectionObserver();
                 }, 500);
             }, 800);
             
@@ -977,16 +1172,6 @@ Your Best Friend`;
         
         // Initialize on load
         document.addEventListener('DOMContentLoaded', init);
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            // Adjust message box height for mobile
-            if (window.innerWidth <= 768) {
-                messageBox.style.maxHeight = '60vh';
-            } else {
-                messageBox.style.maxHeight = '70vh';
-            }
-        });
     </script>
 </body>
 </html>
